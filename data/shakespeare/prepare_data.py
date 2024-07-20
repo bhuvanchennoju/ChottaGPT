@@ -1,7 +1,15 @@
+
+'''
+I have just copied the code from the original implementation and made it dynamic so that we can use any encoder that could be replaced gpu-2 
+as I was just looking into the encoding part with a toy dataset of shakespeare.
+
+'''
+
 import os
 import requests
 import tiktoken
 import numpy as np
+
 
 # download the tiny shakespeare dataset
 input_file_path = os.path.join(os.path.dirname(__file__), 'input.txt')

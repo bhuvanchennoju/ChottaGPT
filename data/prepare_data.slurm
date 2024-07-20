@@ -16,5 +16,5 @@ conda activate chotallm
 
 
 if [[ ${SLURM_ARRAY_TASK_ID} == 1 ]] ; then
-    python openwebtext/prepare_data.py --dataset openwebtext-10k --encoder gpt2  --num_proc 5 --test_size 0.0005 --samples 2 --save_dir openwebtext/splits
+    python openwebtext/prepare_data.py --dataset openwebtext-10k --encoder cl100k_base --num_proc 65 --test_size 0.0005 --samples 2 --save_dir openwebtext/splits
 fi

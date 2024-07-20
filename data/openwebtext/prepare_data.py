@@ -33,7 +33,7 @@ def get_encoder(encoder_name):
     # in the original implementation gpt-2 encder is used and it is hardcoded, 
     # but I have made it dynamic so that we can use any encoder that could be replaced gpu-2 
 
-    #     "gpt2": gpt2,
+    # "gpt2": gpt2,
     # "r50k_base": r50k_base,
     # "p50k_base": p50k_base,
     # "p50k_edit": p50k_edit,
@@ -70,6 +70,9 @@ def tokenize_dataset(split_dataset, enc, num_proc=1):
     return tokenized
 
 def write_to_bin(tokenized, dtype=np.uint16, total_batches=1024,save_dir = None):
+
+    ## if the numpy version is greater than 1.x this will throw an error, so ensure to downgrade the numpy version to 1.x
+    # I had an error with numpy version 2.x , so I downgraded to 1.x. apparently this is issue with datasets library, hard to debug lol.
     for split,dset in tokenized.items():
         logging.info(f"Writing {split} dataset to bin file")
         arr_len = np.sum(tokenized[split]['len'], dtype=np.uint64)
@@ -81,13 +84,21 @@ def write_to_bin(tokenized, dtype=np.uint16, total_batches=1024,save_dir = None)
         filename = os.path.join(save_dir, f'{split}.bin')
         arr = np.memmap(filename, dtype=dtype, mode='w+', shape=(arr_len,)) # creating the memory array to store the data : this step ensures that we are not loading the entire data into memory
         idx = 0
+        dataset_size = len(dset)
+        if total_batches > dataset_size:
+            total_batches = dataset_size # this is through me under the bus firsttime, so just making sure total_batches in limit
+        
         for batch_idx in tqdm(range(total_batches), desc=f'writing {filename}'):
-            batch = dset.shard(num_shards=total_batches, index=batch_idx, contiguous=True).with_format('numpy') #shard: shard splits the dataset into several shards (num_shards) and returns the i-th shard (index)
-            print(batch)
-            batch_ids = batch['ids'].to_numpy()
-            arr_batch = np.concatenate(batch_ids)
-            arr[idx : idx + len(arr_batch)] = arr_batch
-            idx += len(arr_batch)
+            try:
+                batch = dset.shard(num_shards=total_batches, index=batch_idx, contiguous=True).with_format('numpy')
+                batch_ids = batch['ids']
+                arr_batch = np.concatenate(batch_ids)
+                arr[idx: idx + len(arr_batch)] = arr_batch
+                idx += len(arr_batch)
+            except IndexError as e:
+                logging.error(f"error {e}")
+                break 
+
         arr.flush()
         del arr
         
