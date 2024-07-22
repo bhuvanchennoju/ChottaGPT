@@ -44,7 +44,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 
 # directories
-WORK_dir = '/n/projects/kc2819/projects/ChotaLLM'
+WORK_dir = ''
 DATA_dir =  os.path.join(WORK_dir, 'data')
 SRC_dir = os.path.join(WORK_dir, 'src')
 input_file_path = os.path.join(DATA_dir,'shakespeare', 'input.txt')
