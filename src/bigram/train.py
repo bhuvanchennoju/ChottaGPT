@@ -10,6 +10,7 @@ this is a simple train, and validation loop for the bigram model.
 
 """
 import torch
+import logging
 
 def train(model,optimizer,epochs,batcher,eval_iters):
 
@@ -28,11 +29,14 @@ def train(model,optimizer,epochs,batcher,eval_iters):
         model.train()
         return out
 
-    loss_track = []
+    loss_track = {'train':[],'valid':[]}
     for epoch in range(epochs):
 
         if epoch % eval_iters == 0:
             losses = estimate_loss()
+            loss_track['train'].append(losses['train'])
+            loss_track['valid'].append(losses['valid'])
+            logging.info(f'epoch:{epoch}, train_loss:{losses["train"]}, valid_loss:{losses["valid"]}')
             print(f'epoch:{epoch}, train_loss:{losses["train"]}, valid_loss:{losses["valid"]}')
 
         x,y = batcher.get_batch('train')
@@ -40,7 +44,5 @@ def train(model,optimizer,epochs,batcher,eval_iters):
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()    
-        loss_track.append(loss.item())
-    print(f'epoch:{epoch}, loss:{loss.item()}')
     return loss_track
 

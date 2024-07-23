@@ -68,8 +68,8 @@ class Batcher:
     def get_batch(self,split):
         data = self.data[split]
         start_idx = random.sample(range(len(data) - self.block_size), self.batch_size)
-        x = stack([tensor(data[i:i+self.block_size]) for i in start_idx])
-        y = stack([tensor(data[i+1:i+self.block_size+1]) for i in start_idx])
+        x = stack([tensor(data[i:i+self.block_size].detach().numpy()) for i in start_idx]) # (batch_size, block_size) expected shape and expected in tuple of tensors or list of tensors
+        y = stack([tensor(data[i+1:i+self.block_size+1].detach().numpy()) for i in start_idx])
         return x,y
      
 
