@@ -29,7 +29,7 @@ from src.bigram.data import get_data
 from src.bigram.tokenizer import simpleTokenizer
 from src.bigram.dataloader import train_valid_split, Batcher
 from src.bigram.train import train
-from src.bigram_with_selfattention_head.model import BigramLanguageModel
+from src.bigram_multiHeadattention.model import BigramLanguageModel
 
 
 seed = 2024
@@ -45,7 +45,7 @@ logs_dir = os.path.join(WORK_dir,'logs')
 fig_dir = os.path.join(WORK_dir,'assets','images')
 
 
-exp_name = 'bigram_with_sa_head_loss'
+exp_name = 'bigram_with_MHA_ffl_addlaynorm_loss'
 
 # hyperparameters
 split_ratio = [0.8,0.2,0.0]
@@ -95,8 +95,10 @@ data_batcher = Batcher(data,block_size,batch_size)
 model = BigramLanguageModel(vocab_size,n_embed,block_size).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 
+
 # train
 loss_track = train(model,optimizer,max_iters,data_batcher,eval_iters)
+
 
 # loss to disk
 np.save(os.path.join(logs_dir,f'{exp_name}.npy'),loss_track)
