@@ -40,13 +40,6 @@ class train_valid_split:
         return self.train_data, self.valid_data, self.test_data
 
 
-# def get_batch(split):
-#     data  = train_data if split == 'train' else val_data
-#     start_idx = torch.randint(0, data.size(0) - block_size, (batch_size,))
-#     x = torch.stack([data[i:i+block_size] for i in start_idx]) # (batch_size, block_size) expected shape and expected in tuple of tensors or list of tensors
-#     y = torch.stack([data[i+1:i+block_size+1] for i in start_idx])
-#     return x,y
-    
 class Batcher:
     '''
     create the batches of x,y data for the model;
@@ -72,22 +65,4 @@ class Batcher:
         y = stack([tensor(data[i+1:i+self.block_size+1].detach().numpy()) for i in start_idx])
         return x,y
      
-
-    
-
-    # def __iter__(self):
-    #     self.current_idx = 0
-    #     random.shuffle(self.indices)
-    #     return self
-    
-    # def __next__(self):
-    #     if self.current_idx >= len(self.indices):
-    #         raise StopIteration
-    #     batch_indices = self.indices[self.current_idx:self.current_idx + self.batch_size]
-    #     self.current_idx += self.batch_size
-    #     x = stack([tensor(self.data[i:i+self.block_size]) for i in batch_indices])
-    #     y = stack([tensor(self.data[i+1:i+self.block_size+1]) for i in batch_indices])
-    #     return x,y
-    
-
 

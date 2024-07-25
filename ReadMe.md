@@ -1,131 +1,190 @@
-# ChottaGPT
+# Transformer From Scratch
 
-This is project reimplemntation of NanoGPT by andrej karpathy. Chotta means small in hindi, this makes this project a small GPT project lol!.
+This repository contains the implementation of a PyTorch-based decoder-only transformer, scaled to the level of a small-scale language model. Inspired by Andrej Karpathy's latest video on GPT, this project is build to understand the process of building a transformer model from scratch and scale. 
 
-* Objective of this project is to understand the internals of the GPT kind of models
-* How exactly training workflow should be set
-* What kind of optimization tricks does a production grade LLMs usually use
-* How to fine tune a pretraiend LLM to certain task
-* finally how to evaluate the LLM model.
+## Objectives of the project
+* To build a Minimum Viable Product (MVP) end-to-end pipeline for training a language model.
+* To implement an attention mechanism from scratch in PyTorch.
+* To replicate the decoder structure of the Transformer with self-attention blocks.
+* To scale the model for token-by-token prediction (character-level in this case).
 
-
-
-## Table of Contents
-- [ChottaGPT](#chottagpt)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Kernel Optimization with Tricks](#kernel-optimization-with-tricks)
-    - [torch.compile](#torchcompile)
-    - [Flash Attention](#flash-attention)
-    - [Nice numbers](#nice-numbers)
-  - [Algorithmic Optimization: Hyperparameters](#algorithmic-optimization-hyperparameters)
-    - [AdamW optimizer](#adamw-optimizer)
-    - [Gradient clipping](#gradient-clipping)
-    - [Cosine Decay Learning Rate with Linear Warmup](#cosine-decay-learning-rate-with-linear-warmup)
-    - [Linear Increase of Batch Size](#linear-increase-of-batch-size)
-    - [Data Sampling Without Replacement](#data-sampling-without-replacement)
-    - [Weight Decay and Fused Kernels in AdamW](#weight-decay-and-fused-kernels-in-adamw)
-
-## Introduction
-
-ChottaGPT is a lightweight implementation of GPT models inspired by NanoGPT, focusing on the key aspects of optimizing model training and inference. This README aims to document the various optimization techniques applied throughout the implementation, making it a valuable learning resource.
+For this project I have used shakespeare text data.
 
 
-## Kernel Optimization with Tricks
-### torch.compile
-torch.compile performs kernel fusion, optimizing kernels by reducing Python overhead. Without torch.compile, operations would be performed multiple times on the chip and saved to GPU memory (HBM). With torch.compile, overheads like calculating activations (e.g., GELU) are performed only once when the tensors are on the GPU chip, and everything is stored to memory (HBM) in one go. This process is known as kernel fusion.
+## Project Code
 
-Speedup mainly comes from reducing Python overhead and GPU read/writes, and so the observed speedup may vary on factors such as model architecture and batch size. For example, if a model’s architecture is simple and the amount of data is large, then the bottleneck would be GPU compute and the observed speedup may be less significant.
-   
-Source: [PyTorch Torch Compile Tutorial](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)
-While torch.compile is excellent for optimizing kernels, there are certain operations it might not optimize. An example of this is flash attention.
-
-### Flash Attention
-Flash Attention is a kernel fusion algorithm that fuses critical attention steps, including matrix multiplication, dropout, softmax, masking, and another matrix multiplication, into a single fused kernel called flash attention. The reason torch.compile cannot optimize it is that it requires an algorithmic rewrite in attention mechanism. From the paper, its reported that flash attention is 7.6 times faster than traditional attention because it is memory-conscious, despite having higher FLOPs than the traditional algorithm.
-
-Under the hood, instead of performing a large chunk of matrix calculations in one step, the paper proposes an on-fly normalization calculation for softmax. This approach rewrites the softmax calculation into an incremental tiling fashion, making the physical existence of the large matrix multiplication redundant, performing the step on the fly. 
-   ```python 
-   # before 
-   att = (q @ k.transpose(-2.-1)) * (1.0 / math.sqrt(k.size(-1))) #--->(1) 
-   att = att.masked_fill(self.bias[:,:,:T,:T] == 0 , float('-inf'))
-   att = F.softmax(att, dim = -1)
-   y = att @ v # dims (B,nh, T, T) x (B, nh, T,hs) --> (B, nh, T, hs)
-
-   # after
-   y = F.scaled_dot_product_attention(q,k,v,is_causal = True)
-   
-   ```
-Source: [Flash Attention GitHub Repository](https://github.com/Dao-AILab/flash-attention)
-
-
-### Nice numbers
-(or powers of two) Using powers of 2 is a hacky but effective way to optimize performance. In CUDA, many kernels use block tiles, which are typically in chunks of power of 2. When the desired calculation does not fit into these blocks, operations are performed in two or three phases, taking more time. By changing the numbers to nice powers of 2, we remove the boundary chunks that require a second phase of calculation, optimizing runtime.
-
-
-
-## Algorithmic Optimization: Hyperparameters
-
-This optimizations are purely copied based on the GPT-3 paper. I have explained breifly about each paprameter, and directly using the paramters discussed in the lecture.  
-
-### AdamW optimizer 
-The AdamW optimizer is an improved version of Stochastic Gradient Decent with momoentu, and known for its ability to handle sparse gradients on noisy problems. The choice of beta1 and beta2 values controls the decay rates of moving averages of gradient and its square, respectively, balancing the speed of convergence and stability. The eps value is a small constant added to avoid division by zero errors.
-
-- **beta1 = 0.9**
-- **beta2 = 0.95**
-- **eps = 10^-8**
-
-### Gradient clipping
- Clipping the gradients to 1 after the backward pass to prevent traing overshoots, and from updating with excessively large gradients, which can destabilize or shock the model in the training process. High gradient values, resulting from high loss, can cause the model to take large, destabilizing steps during optimization. For instance, one of the batch have bad quality data, that would get the high loss and sudden spike in the gradient calculation, and this shock the process. By clipping the gradients, we ensure that the model updates remain within a reasonable range, promoting stable and consistent learning.
-1) 
-```python
-norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+```bash
+src
+├── simple_bigram_model
+│   ├── model.py
+│   └── runSimpleBigram.py
+├── single_attention_bigram_model
+│   ├── model.py
+│   └── runSingleAttention.py
+├── multi_attention_bigram_model
+│   ├── model.py
+│   └── runMultiAttention.py
+├── multi_stack_multi_attention_bigram_model
+│   ├── model.py
+│   └── runMultiStackMultiAttention.py
+├── data.py
+├── dataloader.py
+├── tokenizer.py
+└── train.py
 ```
 
-### Cosine Decay Learning Rate with Linear Warmup
-Adopting a cosine decay learning rate schedule helps in smoothly reducing the learning rate, preventing abrupt changes that can destabilize training. The initial linear warmup phase allows the model to gradually adapt to learning, reducing the risk of overshooting the optimal solution during the early stages of training when the weights are randomly initialized and gradients can be large.
+## Prerequisites
+
+* python 3.12.4 
+* conda
+
+## Installations
+
+I have create a conda requirements to install required dependencies:
+
+```bash
+conda create --name <yourenvname> --file requirements.txt
+
+```
+
+## Running the Models
+
+I have added all configuration settings and hyperparameters are within the run files. To train and evaluate a model, run the following command with respective name of the model in the model directory.
+
+```
+  python runmodelname.py  
+```
+
+
+
+Attention Mechanism: 
 
 ```python
+  import torch
+  import torch.nn as nn
+  import torch.nn.functional as F
 
-# cosine decay learning rate by karpathy
-max_lr = 3e-4
-min_lr = max_lr * 0.1
-warmup_steps = 10
-max_steps = 50
+  # Let's say we are feeding a batch of B tokens of length T with features of tokens C
+  torch.manual_seed(2024)
+  B, T, C = 4, 8, 32  # batch size, sequence length, feature dimension
+  x = torch.rand((B, T, C))
 
-def get_lr(step):
-  # 1) linear warmup for warmup_steps steps
-  if step < warmup_steps:
-      return max_lr * (step + 1) / warmup_steps
-  
-  # 2) if step > max_steps, return min learning rate
-  if step > max_steps:
-      return min_lr
+  head_size = 16
+  num_heads = C // head_size  # This is like grouped convolution but grouped attention to communicate well between the nodes
 
-  # 3) in between, use cosine decay down to min learning rate
-  decay_ratio = (step - warmup_steps) / (max_steps - warmup_steps)
-  assert 0 <= decay_ratio <= 1
-  coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
-  return min_lr + coeff * (max_lr - min_lr)
+  # In a naive way of passing the information from past to current token is by taking the mean of the features 
+  # and using them like a weight to see the importance of a given token in the context of the old token.
+  # In this mean approach, all the tokens in a sentence are assigned the same values. But if we make this data-dependent, 
+  # it would give dynamic and strength-based affinity scores.
+  # Query, Key, Value step does exactly the same. Each token outputs query, key, value.
 
+  # query -- what the token is interested in with given context
+  # key --  here is what token has with given context
+  # value --- if other tokens find the current token interesting, here is what the current token will communicate to the model about
 
-# in training loop
-for step in range(max_steps):
-  # code 
-  # code
-  # backward, and norm
-  lr = get_lr(step) #<----------- learning rate is changing in every step
-  for param_group in optimizer.param_groups:
-      param_group['lr'] = lr  
-  optimizer.step()
+  # This is the key to creating the attention or affinity scores.
+  query = nn.Linear(C, head_size, bias=False)  # (C, head_size)
+  key = nn.Linear(C, head_size, bias=False)  # (C, head_size)
+  value = nn.Linear(C, head_size, bias=False)  # (C, head_size)
+
+  # Each token outputs three values: q, k, v
+  k = key(x)  # (B, T, head_size)
+  q = query(x)  # (B, T, head_size)
+
+  # We calculate the affinity scores by doing the dot product: like an asymmetric similarity check.
+  # This will light up all the tokens that are related to others by giving high similarity score to that node.
+  # To compensate for the sharpness of softmax issues, we normalize the weights by head_size to bring the weights to 
+  # normalized values and avoid one-hot encoding of values.
+  wei = q @ k.transpose(-2, -1) / head_size ** 0.5  # (B, T, head_size) @ (B, head_size, T) -> (B, T, T)
+  # This is a decoder-only step so we need to make sure that the current token sees only the present and past tokens.
+  # A lower triangular matrix does exactly the same in matrix multiplication.
+  tril = torch.tril(torch.ones(T, T))
+  wei = wei.masked_fill(tril == 0, float('-inf'))
+  wei = F.softmax(wei, dim=1)
+  v = value(x)  # (B, T, head_size)
+  out = wei @ v  # (B, T, T) @ (B, T, head_size) = (B, T, head_size)
+
 
 ```
 
 
-### Linear Increase of Batch Size
-Gradually increasing the batch size can lead to more stable convergence. Starting with smaller batch sizes helps the model learn more nuanced patterns in the data, while progressively larger batches improve computational efficiency and make better use of GPU resources. This is not implemented in the lecture series yet. 
 
-### Data Sampling Without Replacement
-Sampling data without replacement ensures that each sample is seen exactly once per epoch. This approach minimizes overfitting by preventing the model from seeing the same samples too frequently, which can cause it to memorize rather than generalize from the training data. In the code, this is implemented by step wise fashioned traversing the dataset for given epochs. 
+## Results:
+### Simple Bigram model:
 
-### Weight Decay and Fused Kernels in AdamW
-In the Adamw, weight decay acts as a regularizer, preventing the model from becoming overly complex and reducing the risk of overfitting. In the code implementation a weight decay of 0.1 is set. From the lecture, its is stated that weight decay should be applied to only tensors that are not 1 dim.  By splitting parameters into those that need weight decay and those that don't (e.g., layer norms, scales, biases), and using fused AdamW, we optimize the training process. Fused AdamW reduces the overhead of the optimization process by merging multiple operations into a single kernel call, enhancing computational efficiency on CUDA-enabled GPUs.
+```bash
+
+    epoch:4800, train_loss:2.540316343307495, valid_loss:2.580368757247925
+
+    #generated text: 
+    Wourgo asake bokha pore byT, is t fr he.
+    WI t -qussetullhwayour, heENIEDWak fomod
+    Pulxcor hof s cond Wce ofy!
+    MBus, BYBXF:
+
+    ULUFuir l t, GI a; pRED b!
+    Thavfoasatsat R pap; nd mbe ntimalhime-pawome,n t
+
+
+```
+
+
+### Single Head Attention Model:
+
+```bash
+
+  epoch:4800, train_loss:2.3642752170562744, valid_loss:2.4115657806396484
+
+  #generated text: 
+  WONMLoefinge
+  F cuncas hacke con sst,
+  Adois ogat whe pang filerve dpals shy I pae fory fangerer ncom ngou, fo ase
+  Pree sikeve I, ay yoth my buke: bens tour tly heary thang lil thin tre swatt brthe,
+  Afr
+
+
+```
+
+
+
+### Multi Head Attention Model:
+
+```bash
+
+  epoch:4800, train_loss:2.218127489089966, valid_loss:2.2772650718688965
+
+  # generated text: 
+  ucmotre I gright thas hacke come swcas, is of thave pris filesthat alser youdpak foremfadedifr queadn''d, fordse
+  POLe,
+  Rerve I ivery thomy buke: bens to my lish ary than thil the a re's atty pthe mufo
+
+
+```
+
+
+
+### Transformer Model with feedforwad, and layer norms:
+
+```bash
+
+epoch:4800, train_loss:2.085949659347534, valid_loss:2.172783136367798
+
+# generated text: 
+
+BENTERWICHANGHETIS:
+Firs;
+The hath rught.
+
+JUCESTOLUSILENOS:
+My such liughs emerosm. Way-urwfich it thomet! my noth him, Was.
+
+RIXE:
+O, you a oulf?.
+
+DURGEONRIENET:
+Hous pitus of gell mart merius Por
+
+
+```
+
+With each iteration and increase in model complexity, there's a noticeable improvement in validation loss and the quality of generated text. Although the generated text is not perfect English, clear patterns and structures are clear as the models become more complex.

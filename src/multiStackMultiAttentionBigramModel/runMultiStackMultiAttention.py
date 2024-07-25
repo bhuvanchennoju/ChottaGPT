@@ -10,9 +10,6 @@ Kudos to:
 
 The bigram model with self attention head is a simple language model that predicts the next character based on the previous character.
 
-
-
-
 """
 
 import os
@@ -49,18 +46,17 @@ exp_name = 'tranformer_bigram'
 # hyperparameters
 split_ratio = [0.8,0.2,0.0]
 block_size = 256 # maximum length of the sequence for prediction
-batch_size = 64 # batch size for the model
+batch_size = 128 # batch size for the model
 max_iters = 5000 
 lr = 1e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
-n_embed = 384
-n_heads = 6
-head_size = 64
-n_layers = 6
+n_embed = 512
+n_heads = 8  ## this has to be a factor of n_embed as I am using multihead attention with n_embed/n_heads
+n_layers = 10
 dropout = 0.2
 
-max_tokens = 1000
+max_tokens = 5000
 ##########################################################################################
 
 
@@ -70,10 +66,12 @@ max_tokens = 1000
 logging.basicConfig(level = logging.INFO)
 
 logging.info(f'working on device: {device}')    
+# print(f'working on device: {device}')
 
 # get the data
 text = get_data(input_file_path)
 logging.info(f'text data: {text[:100]}')
+# print(f'text data: {text[:100]}')
 
 # create the tokenizer
 tokenizer = simpleTokenizer(text)
@@ -84,6 +82,9 @@ encoded_text = tokenizer.encode(text)
 logging.info(f'vocab size: {vocab_size}')
 logging.info(f'encoded text: {encoded_text[:10]}')
 
+# print(f'vocab size: {vocab_size}')
+# print(f'encoded text: {encoded_text[:10]}')
+
 # train, valid, test splits
 data = torch.tensor(encoded_text)
 data_splitter = train_valid_split(data,split_ratio = split_ratio)
@@ -92,11 +93,15 @@ valid_data = data_splitter.valid_data
 logging.info(f'train data: {train_data.shape}')
 logging.info(f'valid data: {valid_data.shape}')
 
+# print(f'train data: {train_data.shape}')
+# print(f'valid data: {valid_data.shape}')
+
 # batcher
 data = {'train':train_data,'valid':valid_data}
 data_batcher = Batcher(data,block_size,batch_size)
 
 # model and optimizer
+
 model = Transformer(vocab_size,n_embed,block_size,n_layers,n_heads,dropout).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 
@@ -117,6 +122,7 @@ context = torch.zeros((1,1),dtype = torch.long,device = device)
 generate_idx = model.generate(context, max_new_tokens = max_tokens)
 generate_text = tokenizer.decode(generate_idx[0].cpu().numpy())
 logging.info(f'generated text: {generate_text}')
+# print(f'generated text: {generate_text}')
 
 
 
