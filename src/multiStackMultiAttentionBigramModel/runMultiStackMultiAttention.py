@@ -25,11 +25,11 @@ import torch
 
 
 sys.path.append(str(Path.cwd()))
-from src.bigram.data import get_data
-from src.bigram.tokenizer import simpleTokenizer
-from src.bigram.dataloader import train_valid_split, Batcher
-from src.bigram.train import train
-from src.bigram_multiHeadattention.model import BigramLanguageModel
+from src.data import get_data
+from src.tokenizer import simpleTokenizer
+from src.dataloader import train_valid_split, Batcher
+from src.train import train
+from src.multiStackMultiAttentionBigramModel.model import Transformer
 
 
 seed = 2024
@@ -45,26 +45,31 @@ logs_dir = os.path.join(WORK_dir,'logs')
 fig_dir = os.path.join(WORK_dir,'assets','images')
 
 
-exp_name = 'bigram_with_MHA_ffl_addlaynorm_loss'
-
+exp_name = 'tranformer_bigram'
 # hyperparameters
 split_ratio = [0.8,0.2,0.0]
-block_size = 8 # maximum length of the sequence for prediction
+block_size = 256 # maximum length of the sequence for prediction
 batch_size = 64 # batch size for the model
 max_iters = 5000 
-lr = 1e-3
+lr = 1e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
-n_embed = 32
-max_tokens = 200
+n_embed = 384
+n_heads = 6
+head_size = 64
+n_layers = 6
+dropout = 0.2
 
-
+max_tokens = 1000
 ##########################################################################################
 
 
 
 # logging setting 
-logging.basicConfig(filename = os.path.join(logs_dir,f'{exp_name}.log'), level = logging.INFO)
+# logging.basicConfig(filename = os.path.join(logs_dir,f'{exp_name}.log'), level = logging.INFO)
+logging.basicConfig(level = logging.INFO)
+
+logging.info(f'working on device: {device}')    
 
 # get the data
 text = get_data(input_file_path)
@@ -92,7 +97,7 @@ data = {'train':train_data,'valid':valid_data}
 data_batcher = Batcher(data,block_size,batch_size)
 
 # model and optimizer
-model = BigramLanguageModel(vocab_size,n_embed,block_size).to(device)
+model = Transformer(vocab_size,n_embed,block_size,n_layers,n_heads,dropout).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 
 
@@ -102,6 +107,9 @@ loss_track = train(model,optimizer,max_iters,data_batcher,eval_iters)
 
 # loss to disk
 np.save(os.path.join(logs_dir,f'{exp_name}.npy'),loss_track)
+
+#save the model
+torch.save(model.state_dict(),os.path.join(logs_dir,f'{exp_name}.pth'))
 
 
 # generate the new text
