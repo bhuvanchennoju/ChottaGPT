@@ -1,0 +1,19 @@
+
+# data files
+data/fineweb/splits/*
+data/openwebtext/splits/*
+data/shakespeare/splits/*
+data/openwebtext
+data/fineweb
+data/prepare_data.slurm
+
+# logs
+logs/*
+
+# cache files
+src/bigram/__pycache__/*
+__pycache__/
+
+# readme files
+read2.md
+train.slurm
