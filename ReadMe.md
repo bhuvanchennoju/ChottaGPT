@@ -1,4 +1,4 @@
-# Transformer From Scratch
+#  GPT from Scratch
 
 This repository contains the implementation of a PyTorch-based decoder-only transformer, scaled to the level of a small-scale language model. Inspired by Andrej Karpathy's latest video on GPT, this project is build to understand the process of building a transformer model from scratch and scale. 
 
@@ -195,15 +195,14 @@ Hous pitus of gell mart merius Por
 ### GPT model
 
 Thi model is a full blown stack of tranformers with following parameters
-block_size = 256 
-batch_size = 128 # batch size for the model
-max_iters = 5000 
-lr = 1e-4
-eval_iters = 200
-n_embed = 512
-n_heads = 8  ## this has to be a factor of n_embed as I am using multihead attention with n_embed/n_heads
-n_layers = 10
-dropout = 0.2
+* block_size = 256 
+* batch_size = 128 # batch size for the model
+* max_iters = 5000 
+* lr = 1e-4
+* n_embed = 512
+* n_heads = 8  ## this has to be a factor of n_embed as I am using multihead attention with n_embed/n_heads
+* n_layers = 10
+* dropout = 0.2
 
 on NVIDIA A100 Gpu it took around 20mins to run the model from scartch. Definetly my models are overfitted. 
 
