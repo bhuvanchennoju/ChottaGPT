@@ -1,11 +1,9 @@
 
 # data files
-data/fineweb/splits/*
-data/openwebtext/splits/*
 data/shakespeare/splits/*
-data/openwebtext
-data/fineweb
-data/prepare_data.slurm
+data/openwebtext/*
+data/fineweb/*
+data/*.slurm
 
 # logs
 logs/*

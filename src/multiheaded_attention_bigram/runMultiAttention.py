@@ -29,7 +29,7 @@ from src.data import get_data
 from src.tokenizer import simpleTokenizer
 from src.dataloader import train_valid_split, Batcher
 from src.train import train
-from src.singleAttentionBigramModel.model import BigramLanguageModel
+from src.multiheaded_attention_bigram.model import BigramLanguageModel
 
 
 seed = 2024
@@ -45,7 +45,7 @@ logs_dir = os.path.join(WORK_dir,'logs')
 fig_dir = os.path.join(WORK_dir,'assets','images')
 
 
-exp_name = 'bigram_with_sa_head_loss'
+exp_name = 'bigram_with_MHA_ffl_addlaynorm_loss'
 
 # hyperparameters
 split_ratio = [0.8,0.2,0.0]
@@ -89,7 +89,7 @@ logging.info(f'valid data: {valid_data.shape}')
 
 # batcher
 data = {'train':train_data,'valid':valid_data}
-data_batcher = Batcher(data,block_size,batch_size)
+data_batcher = Batcher(data,block_size,batch_size,device = device)
 
 # model and optimizer
 model = BigramLanguageModel(vocab_size,n_embed,block_size).to(device)

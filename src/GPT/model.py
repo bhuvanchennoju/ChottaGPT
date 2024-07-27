@@ -6,7 +6,7 @@ Kudos to:
     - Karpathy's: https://github.com/karpathy/build-nanogpt?tab=readme-ov-file
     - Video: https://www.youtube.com/watch?v=kCc8FmEb1nY&t=784s
 
-this is a full scale decoder only transformer model with multihead attention and feed forward network
+GPT model implementation for the character level language model.
 
 
 """

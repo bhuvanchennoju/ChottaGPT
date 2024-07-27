@@ -21,12 +21,12 @@ src
 ├── single_attention_bigram_model
 │   ├── model.py
 │   └── runSingleAttention.py
-├── multi_attention_bigram_model
+├── multiheaded_attention_bigram_model
 │   ├── model.py
 │   └── runMultiAttention.py
-├── multi_stack_multi_attention_bigram_model
+├── GPT
 │   ├── model.py
-│   └── runMultiStackMultiAttention.py
+│   └── rungpt.py
 ├── data.py
 ├── dataloader.py
 ├── tokenizer.py
@@ -107,6 +107,11 @@ Attention Mechanism:
 
 ```
 
+## This is a simple mean based attention 
+
+![](assets/gifs/attention.gif)
+
+
 
 
 ## Results:
@@ -186,5 +191,98 @@ Hous pitus of gell mart merius Por
 
 
 ```
+
+### GPT model
+
+Thi model is a full blown stack of tranformers with following parameters
+block_size = 256 
+batch_size = 128 # batch size for the model
+max_iters = 5000 
+lr = 1e-4
+eval_iters = 200
+n_embed = 512
+n_heads = 8  ## this has to be a factor of n_embed as I am using multihead attention with n_embed/n_heads
+n_layers = 10
+dropout = 0.2
+
+on NVIDIA A100 Gpu it took around 20mins to run the model from scartch. Definetly my models are overfitted. 
+
+```bash
+
+epoch:4800, train_loss:1.0582672357559204, valid_loss:1.635657787322998
+
+# generated text: 
+
+QUEEN ELIZABETH:
+A foes, a day, that set based;
+And, for then, how of the heavinest, if he had,
+Had said are together, a foul servants
+Aught a blind wench. Happy you number,
+And you behold him of the each of our near
+Brother kind refush.
+
+FLORIZEL:
+Comfort,
+What, the matter.
+
+PAULINA:
+Come, come; Condith and you plant,--
+
+VIRGILIANA:
+Ready to the people.
+
+First Lord:
+Well, as it.
+
+LEONTES:
+We are no ta'quered you but you have good up,
+But why  that hath slind in use mean for it?
+Where was I amide enough myself? speak me an aims, I
+A mayorr of your bodies, being up in these side
+palt children and by, you accursed indeed,
+If you discourated feedom and entreat that's not tended
+provate all to fay, and so say 'be;' my mourn
+To find 'it to be a word scoreptre than would good.
+3 KING HENRY VI
+
+KING EDWARD IV:
+Pindonce, what was ever their intext?
+
+GLOUCESTER:
+But with a syim that is ramediem?
+
+LADY ANNE:
+Welcome, you should still be: that's the cook,
+Alook at my mindeast, And bound him, that
+
+Was says in the matter's sorrow confer in you
+And ISaly have foundly a leguds prince;
+And together, still you do, my Lord Lewis of North,
+I can suffer the father. That seem it, her rest;
+But, we pity, as it is, that a bound for a fault,
+Were not Corioli, they nor made the fiar name?
+Wherein He sentender by his victory's doom?
+And my condemnd emparchance
+Who uged in the crown.
+
+MOPSSON:
+Sir, Was it well? Hastings? what? ay!
+Even doores, for your grace and safears
+Had retined are the marvellous gentle born.
+
+FLORIZEL:
+We must I reprison to do sain;
+Or be sickness form for your face, and you acceward
+As if the new boorn my gain chomes to now
+The smy stay with's untick his maname arms.
+
+YORK:
+And I, my tongue socies
+In their that hundargement blames withal
+Happied men look to for advanturate.
+
+```
+
+
 
 With each iteration and increase in model complexity, there's a noticeable improvement in validation loss and the quality of generated text. Although the generated text is not perfect English, clear patterns and structures are clear as the models become more complex.
